@@ -1,0 +1,17 @@
+// Invalid TestLang++ Examples
+// This file contains intentional errors to demonstrate error messages
+
+config {
+  base_url = "http://localhost:8080";
+}
+
+// ERROR: Identifier cannot start with digit
+let 2invalid = "test";
+
+test ErrorTest {
+  // ERROR: Missing semicolon
+  GET "/api/test"
+  expect status = 200;
+  
+  // Only one assertion - validation will fail (needs at least 2)
+}

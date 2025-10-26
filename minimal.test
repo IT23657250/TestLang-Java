@@ -1,0 +1,9 @@
+config {
+  base_url = "http://localhost:8080";
+}
+
+test SimpleGet {
+  GET "/api/test";
+  expect status = 200;
+  expect body contains "ok";
+}
