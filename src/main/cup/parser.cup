@@ -1,0 +1,202 @@
+/* CUP specification for TestLang++ Parser */
+
+package com.testlang.parser;
+
+import com.testlang.ast.*;
+import java.util.*;
+import java_cup.runtime.*;
+
+action code {:
+:};
+
+parser code {:
+    public void syntax_error(Symbol cur_token) {
+        System.err.println("Syntax error at line " + (cur_token.left) + 
+                          ", column " + (cur_token.right));
+    }
+
+    public void unrecovered_syntax_error(Symbol cur_token) throws java.lang.Exception {
+        System.err.println("Fatal syntax error at line " + (cur_token.left) + 
+                          ", column " + (cur_token.right));
+        throw new Exception("Parse error");
+    }
+:};
+
+init with {: :};
+
+/* Terminals (tokens returned by the lexer) */
+terminal CONFIG, BASE_URL, HEADER, LET, TEST;
+terminal GET, POST, PUT, DELETE;
+terminal EXPECT, STATUS, BODY, CONTAINS, IN;
+terminal LBRACE, RBRACE, SEMICOLON, EQUALS, DOTDOT;
+terminal String IDENTIFIER, STRING;
+terminal Integer NUMBER;
+
+/* Non-terminals */
+non terminal Program program;
+non terminal ConfigBlock config_block;
+non terminal ConfigBlock opt_config;
+non terminal List<ConfigItem> config_items;
+non terminal ConfigItem config_item;
+non terminal List<Variable> variable_list;
+non terminal Variable variable;
+non terminal Value value;
+non terminal List<TestBlock> tests;
+non terminal TestBlock test;
+non terminal List<Statement> statements;
+non terminal Statement statement;
+non terminal Request request;
+non terminal List<RequestItem> request_block;
+non terminal List<RequestItem> request_items;
+non terminal RequestItem request_item;
+non terminal Assertion assertion;
+
+/* Precedence declarations (if needed) */
+precedence left CONTAINS;
+precedence left EQUALS;
+
+/* Grammar rules */
+
+/* Program structure */
+program ::= 
+    opt_config:c variable_list:v tests:t
+    {: RESULT = new Program(c, v, t); :}
+    ;
+
+opt_config ::=
+    config_block:c
+    {: RESULT = c; :}
+    | /* empty */
+    {: RESULT = null; :}
+    ;
+
+/* Config block */
+config_block ::=
+    CONFIG LBRACE config_items:items RBRACE
+    {: RESULT = new ConfigBlock(items); :}
+    ;
+
+config_items ::=
+    config_items:list config_item:item
+    {: list.add(item); RESULT = list; :}
+    | config_item:item
+    {: List<ConfigItem> list = new ArrayList<>(); 
+       list.add(item); 
+       RESULT = list; :}
+    ;
+
+config_item ::=
+    BASE_URL EQUALS STRING:url SEMICOLON
+    {: RESULT = new ConfigItem("base_url", url); :}
+    | HEADER STRING:key EQUALS STRING:val SEMICOLON
+    {: RESULT = new ConfigItem("header", key, val); :}
+    ;
+
+/* Variables */
+variable_list ::=
+    variable_list:list variable:v
+    {: list.add(v); RESULT = list; :}
+    | /* empty */
+    {: RESULT = new ArrayList<Variable>(); :}
+    ;
+
+variable ::=
+    LET IDENTIFIER:name EQUALS value:val SEMICOLON
+    {: RESULT = new Variable(name, val); :}
+    ;
+
+value ::=
+    STRING:s
+    {: RESULT = new Value(s); :}
+    | NUMBER:n
+    {: RESULT = new Value(n); :}
+    ;
+
+/* Tests */
+tests ::=
+    tests:list test:t
+    {: list.add(t); RESULT = list; :}
+    | test:t
+    {: List<TestBlock> list = new ArrayList<>(); 
+       list.add(t); 
+       RESULT = list; :}
+    ;
+
+test ::=
+    TEST IDENTIFIER:name LBRACE statements:stmts RBRACE
+    {: RESULT = new TestBlock(name, stmts); :}
+    ;
+
+/* Statements */
+statements ::=
+    statements:list statement:s
+    {: list.add(s); RESULT = list; :}
+    | statement:s
+    {: List<Statement> list = new ArrayList<>(); 
+       list.add(s); 
+       RESULT = list; :}
+    ;
+
+statement ::=
+    request:r
+    {: RESULT = r; :}
+    | assertion:a
+    {: RESULT = a; :}
+    ;
+
+/* HTTP Requests */
+request ::=
+    GET STRING:path SEMICOLON
+    {: RESULT = new Request("GET", path, new ArrayList<>()); :}
+    | DELETE STRING:path SEMICOLON
+    {: RESULT = new Request("DELETE", path, new ArrayList<>()); :}
+    | POST STRING:path SEMICOLON
+    {: RESULT = new Request("POST", path, new ArrayList<>()); :}
+    | PUT STRING:path SEMICOLON
+    {: RESULT = new Request("PUT", path, new ArrayList<>()); :}
+    | POST STRING:path request_block:items SEMICOLON
+    {: RESULT = new Request("POST", path, items); :}
+    | PUT STRING:path request_block:items SEMICOLON
+    {: RESULT = new Request("PUT", path, items); :}
+    | GET STRING:path request_block:items SEMICOLON
+    {: RESULT = new Request("GET", path, items); :}
+    | DELETE STRING:path request_block:items SEMICOLON
+    {: RESULT = new Request("DELETE", path, items); :}
+    ;
+
+request_block ::=
+    LBRACE request_items:items RBRACE
+    {: RESULT = items; :}
+    | LBRACE RBRACE
+    {: RESULT = new ArrayList<>(); :}
+    ;
+
+request_items ::=
+    request_items:list request_item:item
+    {: list.add(item); RESULT = list; :}
+    | request_item:item
+    {: List<RequestItem> list = new ArrayList<>(); 
+       list.add(item); 
+       RESULT = list; :}
+    ;
+
+request_item ::=
+    HEADER STRING:key EQUALS STRING:val SEMICOLON
+    {: RESULT = new RequestItem("header", key, val); :}
+    | BODY EQUALS STRING:content SEMICOLON
+    {: RESULT = new RequestItem("body", content); :}
+    ;
+
+/* Assertions */
+assertion ::=
+    EXPECT STATUS EQUALS NUMBER:code SEMICOLON
+    {: RESULT = new Assertion("status_equals", code); :}
+    | EXPECT HEADER STRING:key EQUALS STRING:val SEMICOLON
+    {: RESULT = new Assertion("header_equals", key, val); :}
+    | EXPECT HEADER STRING:key CONTAINS STRING:val SEMICOLON
+    {: RESULT = new Assertion("header_contains", key, val); :}
+    | EXPECT BODY CONTAINS STRING:val SEMICOLON
+    {: RESULT = new Assertion("body_contains", val); :}
+    | EXPECT STATUS IN NUMBER:start DOTDOT NUMBER:end SEMICOLON
+    {: RESULT = new Assertion("status_range", start, end); :}
+    ;

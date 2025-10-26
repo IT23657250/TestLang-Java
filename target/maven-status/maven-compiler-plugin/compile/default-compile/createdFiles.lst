@@ -1,0 +1,16 @@
+com\testlang\ast\Assertion.class
+com\testlang\ast\Request.class
+com\testlang\ast\TestBlock.class
+com\testlang\codegen\CodeGenerator.class
+com\testlang\Main.class
+com\testlang\parser\parser.class
+com\testlang\parser\sym.class
+com\testlang\ast\Variable.class
+com\testlang\parser\parser$CUP$parser$actions.class
+com\testlang\ast\RequestItem.class
+com\testlang\ast\ConfigItem.class
+com\testlang\ast\Program.class
+com\testlang\ast\Value.class
+com\testlang\parser\Lexer.class
+com\testlang\ast\ConfigBlock.class
+com\testlang\ast\Statement.class

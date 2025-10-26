@@ -1,0 +1,15 @@
+// Simple test to debug parser
+
+config {
+  base_url = "http://localhost:8080";
+}
+
+let user = "admin";
+
+test Login {
+  POST "/api/login" {
+    body = "test";
+  }
+  expect status = 200;
+  expect body contains "token";
+}

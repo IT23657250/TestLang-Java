@@ -1,0 +1,68 @@
+// TestLang++ Example - Comprehensive API Testing
+// This file demonstrates all features of the TestLang++ DSL
+
+config {
+  base_url = "http://localhost:8080";
+  header "Content-Type" = "application/json";
+  header "X-App" = "TestLangDemo";
+}
+
+// Variable declarations
+let user = "admin";
+let id = 42;
+let role = "ADMIN";
+
+// Test 1: Login endpoint with POST request
+test Login {
+  POST "/api/login" {
+    body = "{ \"username\": \"$user\", \"password\": \"1234\" }";
+  };
+  expect status = 200;
+  expect header "Content-Type" contains "json";
+  expect body contains "\"token\":";
+}
+
+// Test 2: Get user with variable substitution
+test GetUser {
+  GET "/api/users/$id";
+  expect status = 200;
+  expect body contains "\"id\": 42";
+}
+
+// Test 3: Update user with PUT request
+test UpdateUser {
+  PUT "/api/users/$id" {
+    header "Content-Type" = "application/json";
+    body = "{ \"role\": \"$role\" }";
+  };
+  expect status = 200;
+  expect header "X-App" = "TestLangDemo";
+  expect header "Content-Type" contains "json";
+  expect body contains "\"updated\": true";
+  expect body contains "\"role\": \"ADMIN\"";
+}
+
+// Test 4: Delete request (simple)
+test DeleteUser {
+  DELETE "/api/users/999";
+  expect status = 200;
+  expect body contains "\"deleted\": true";
+}
+
+// Test 5: Multiple assertions on response
+test LoginWithMultipleChecks {
+  POST "/api/login" {
+    body = "{ \"username\": \"admin\", \"password\": \"1234\" }";
+  };
+  expect status = 200;
+  expect header "Content-Type" = "application/json";
+  expect body contains "\"success\":";
+  expect body contains "\"token\":";
+}
+
+// Test 6: Status range check (optional feature)
+test CheckStatusRange {
+  GET "/api/users/$id";
+  expect status in 200..299;
+  expect body contains "\"id\":";
+}
